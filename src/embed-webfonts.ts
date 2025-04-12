@@ -225,27 +225,25 @@ function getUsedFonts(node: HTMLElement) {
   return fonts
 }
 
-export async function getWebFontCSS<T extends HTMLElement>(
-  node: T,
-  options: Options,
-): Promise<string> {
-  const rules = await parseWebFontRules(node, options)
-  const usedFonts = getUsedFonts(node)
-  const cssTexts = await Promise.all(
-    rules
-      .filter((rule) =>
-        usedFonts.has(normalizeFontFamily(rule.style.fontFamily)),
-      )
-      .map((rule) => {
-        const baseUrl = rule.parentStyleSheet
-          ? rule.parentStyleSheet.href
-          : null
-        return embedResources(rule.cssText, baseUrl, options)
-      }),
-  )
+export async function getWebFontCSS(node: HTMLElement, options: Options): Promise<string> {
+  const rules = await parseWebFontRules(node, options);
+  const usedFonts = getUsedFonts(node);
+  const cssTexts = await Promise.all(rules
+    .filter((rule) => {
+      const fontFamily = rule.style && rule.style.fontFamily;
+      if (!fontFamily) return false;
+      return usedFonts.has(normalizeFontFamily(fontFamily));
+    })
+    .map((rule) => {
+      const baseUrl = rule.parentStyleSheet
+        ? rule.parentStyleSheet.href
+        : null;
+      return embedResources(rule.cssText, baseUrl, options);
+    }));
 
-  return cssTexts.join('\n')
+  return cssTexts.join('\n');
 }
+
 
 export async function embedWebFonts<T extends HTMLElement>(
   clonedNode: T,
